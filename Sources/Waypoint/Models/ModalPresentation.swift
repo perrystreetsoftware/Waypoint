@@ -1,4 +1,5 @@
 import Observation
+import Foundation
 
 struct ModalPresentationWrapper: Identifiable {
     let destination: AnyNavigatorDestination
