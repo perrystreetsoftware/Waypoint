@@ -17,14 +17,32 @@ final class AppTabProvider: RootTabProviding {
     }
 }
 
-let navigator = WaypointNavigator(tabProvider: AppTabProvider())
+let navigator = WaypointNavigator.shared
 
 WaypointTabView()
-    .environment(navigator)
 
 navigator.navigate(to: DetailView(), mode: .push)
 navigator.navigate(to: SettingsView(), mode: .present(.sheet))
 navigator.switchTab(to: AppTab.inbox)
+```
+
+## Registration
+
+Register the tab provider once, in your `App`'s `init`, before any view is built. Registering a second time is a programmer error and traps.
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        WaypointNavigator.shared.register(tabProvider: AppTabProvider())
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            WaypointTabView()
+        }
+    }
+}
 ```
 
 ## Rules

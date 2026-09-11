@@ -4,28 +4,44 @@ import SwiftUI
 
 @Observable
 public final class WaypointNavigator {
-    public var selectedTab: NavigatorTab
-    let rootTabs: [RootTab]
-    private var tabRouters: [NavigatorTab: Router] = [:]
+    // MARK: - Public Properties
+
+    public static let shared = WaypointNavigator()
+
+    public var selectedTab: NavigatorTab!
+
+    // MARK: - Internal Properties
+
+    private(set) var rootTabs: [RootTab]!
+
+    // MARK: - Private Properties
+
+    private var tabRouters: [NavigatorTab: Router]!
 
     private var activeRouter: Router {
-        var router = tabRouters[selectedTab]!
+        guard var router = tabRouters[selectedTab] else {
+            fatalError("WaypointNavigator.register(tabProvider:) must be called before navigating")
+        }
         while let presented = router.presentedRouter {
             router = presented
         }
         return router
     }
 
-    public init(tabProvider: RootTabProviding) {
+    // MARK: - Init
+
+    private init() {}
+
+    // MARK: - Public Methods
+
+    public func register(tabProvider: RootTabProviding) {
+        precondition(tabRouters == nil, "WaypointNavigator is already registered")
         let rootTabs = tabProvider.rootTabs
         precondition(!rootTabs.isEmpty, "RootTabProviding must provide at least one tab")
+        self.tabRouters = [:]
         self.rootTabs = rootTabs
         self.selectedTab = rootTabs[0].id
-        self.registerRouters(for: rootTabs.map(\.id))
-    }
-
-    func router(for tab: NavigatorTab) -> Router {
-        tabRouters[tab]!
+        registerRouters(for: rootTabs.map(\.id))
     }
 
     public func navigate(to destination: some View, mode: NavigationMode) {
@@ -41,8 +57,7 @@ public final class WaypointNavigator {
 
     public func switchTab(to tab: NavigatorTab) {
         guard let targetRouter = tabRouters[tab] else {
-            assertionFailure("Tab \(tab) is not registered")
-            return
+            fatalError("Tab \(tab) is not registered")
         }
         tabRouters[selectedTab]?.dismissPresented()
         targetRouter.dismissPresented()
@@ -61,6 +76,14 @@ public final class WaypointNavigator {
     public func navigateToRoot() {
         activeRouter.popToRoot()
     }
+
+    // MARK: - Internal Methods
+
+    func router(for tab: NavigatorTab) -> Router {
+        tabRouters[tab]!
+    }
+
+    // MARK: - Private Methods
 
     private func registerRouters(for tabs: [NavigatorTab]) {
         tabs.forEach {

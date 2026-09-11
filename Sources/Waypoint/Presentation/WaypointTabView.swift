@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct WaypointTabView: View {
-    @Environment(WaypointNavigator.self) private var navigator
+    private let navigator = WaypointNavigator.shared
 
     public init() {}
 
@@ -16,5 +16,6 @@ public struct WaypointTabView: View {
                 .tag(tab.id)
             }
         }
+        .environment(navigator)
     }
 }
