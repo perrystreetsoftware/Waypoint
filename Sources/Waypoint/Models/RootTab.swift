@@ -11,7 +11,3 @@ public struct RootTab {
         self.view = AnyView(view())
     }
 }
-
-public protocol RootTabProviding {
-    var rootTabs: [RootTab] { get }
-}

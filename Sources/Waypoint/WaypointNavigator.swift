@@ -10,18 +10,12 @@ public final class WaypointNavigator {
 
     public var selectedTab: NavigatorTab!
 
-    // MARK: - Internal Properties
-
-    private(set) var rootTabs: [RootTab]!
-
     // MARK: - Private Properties
 
-    private var tabRouters: [NavigatorTab: Router]!
+    @ObservationIgnored private var tabRouters: [NavigatorTab: Router] = [:]
 
     private var activeRouter: Router {
-        guard var router = tabRouters[selectedTab] else {
-            fatalError("WaypointNavigator.register(tabProvider:) must be called before navigating")
-        }
+        var router = router(for: selectedTab)
         while let presented = router.presentedRouter {
             router = presented
         }
@@ -30,19 +24,9 @@ public final class WaypointNavigator {
 
     // MARK: - Init
 
-    private init() {}
+    init() {}
 
     // MARK: - Public Methods
-
-    public func register(tabProvider: RootTabProviding) {
-        precondition(tabRouters == nil, "WaypointNavigator is already registered")
-        let rootTabs = tabProvider.rootTabs
-        precondition(!rootTabs.isEmpty, "RootTabProviding must provide at least one tab")
-        self.tabRouters = [:]
-        self.rootTabs = rootTabs
-        self.selectedTab = rootTabs[0].id
-        registerRouters(for: rootTabs.map(\.id))
-    }
 
     public func navigate(to destination: some View, mode: NavigationMode) {
         let erasedDestination = AnyNavigatorDestination(destination)
@@ -59,7 +43,7 @@ public final class WaypointNavigator {
         guard let targetRouter = tabRouters[tab] else {
             fatalError("Tab \(tab) is not registered")
         }
-        tabRouters[selectedTab]?.dismissPresented()
+        router(for: selectedTab).dismissPresented()
         targetRouter.dismissPresented()
         targetRouter.popToRoot()
         selectedTab = tab
@@ -83,11 +67,19 @@ public final class WaypointNavigator {
         tabRouters[tab]!
     }
 
-    // MARK: - Private Methods
+    func update(tabs: [NavigatorTab]) {
+        precondition(!tabs.isEmpty, "WaypointTabView needs at least one tab")
+        precondition(Set(tabs).count == tabs.count, "WaypointTabView tabs must have unique ids")
 
-    private func registerRouters(for tabs: [NavigatorTab]) {
-        tabs.forEach {
-            tabRouters[$0] = Router()
+        tabRouters
+            .filter { !tabs.contains($0.key) }
+            .values
+            .forEach { $0.dismissPresented() }
+
+        tabRouters = Dictionary(uniqueKeysWithValues: tabs.map { ($0, tabRouters[$0] ?? Router()) })
+
+        if selectedTab == nil || !tabs.contains(selectedTab) {
+            selectedTab = tabs[0]
         }
     }
 }
