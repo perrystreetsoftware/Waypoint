@@ -11,39 +11,37 @@ Tab-based SwiftUI navigation: one `NavigationStack` per tab, modal flows with th
 ```swift
 import Waypoint
 
-final class AppTabProvider: RootTabProviding {
-    let rootTabs = AppTab.allCases.map { tab in
-        RootTab(id: tab) { tab.rootView }
-    }
+let tabs = AppTab.allCases.map { tab in
+    RootTab(id: tab) { tab.rootView }
 }
 
 let navigator = WaypointNavigator.shared
 
-WaypointTabView()
+WaypointTabView(tabs: tabs)
 
 navigator.navigate(to: DetailView(), mode: .push)
 navigator.navigate(to: SettingsView(), mode: .present(.sheet))
 navigator.switchTab(to: AppTab.inbox)
 ```
 
-## Registration
+## Setup
 
-Register the tab provider once, in your `App`'s `init`, before any view is built. Registering a second time is a programmer error and traps.
+`WaypointTabView(tabs:)` is the only setup step; pass it the root tabs, and it wires up routing for each as it's mounted.
 
 ```swift
 @main
 struct MyApp: App {
-    init() {
-        WaypointNavigator.shared.register(tabProvider: AppTabProvider())
-    }
-
     var body: some Scene {
         WindowGroup {
-            WaypointTabView()
+            WaypointTabView(tabs: AppTab.allCases.map { tab in
+                RootTab(id: tab) { tab.rootView }
+            })
         }
     }
 }
 ```
+
+Tabs may change over time. When `tabs` updates, routers for tabs that remain are kept as-is, routers for removed tabs are torn down, and the selection falls back to the first tab if the previously selected one was removed. `switchTab(to:)` traps when asked for a tab that is not in the current list.
 
 ## Rules
 
