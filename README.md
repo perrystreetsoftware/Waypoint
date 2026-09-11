@@ -17,10 +17,10 @@ final class AppTabProvider: RootTabProviding {
     }
 }
 
-let navigator = WaypointNavigator(tabProvider: AppTabProvider())
+let navigator = WaypointNavigator.shared
+navigator.register(tabProvider: AppTabProvider())
 
 WaypointTabView()
-    .environment(navigator)
 
 navigator.navigate(to: DetailView(), mode: .push)
 navigator.navigate(to: SettingsView(), mode: .present(.sheet))
