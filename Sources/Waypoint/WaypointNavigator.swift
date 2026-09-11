@@ -35,9 +35,9 @@ public final class WaypointNavigator {
     // MARK: - Public Methods
 
     public func register(tabProvider: RootTabProviding) {
-        guard let rootTabs = tabProvider.rootTabs else {
-            fatalError("RootTabProviding must provide at least one tab")
-        }
+        precondition(tabRouters == nil, "WaypointNavigator is already registered")
+        let rootTabs = tabProvider.rootTabs
+        precondition(!rootTabs.isEmpty, "RootTabProviding must provide at least one tab")
         self.tabRouters = [:]
         self.rootTabs = rootTabs
         self.selectedTab = rootTabs[0].id
