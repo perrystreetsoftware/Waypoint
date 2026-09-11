@@ -47,3 +47,7 @@ Tabs may change over time. When `tabs` updates, routers for tabs that remain are
 
 Waypoint is app-agnostic. It has no dependencies beyond SwiftUI; dependency injection and app types stay in the app.
 The first root tab is the initially selected one.
+
+## License
+
+Waypoint is available under the Apache License 2.0. See [LICENSE](LICENSE) for details.
