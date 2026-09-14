@@ -14,14 +14,13 @@ public struct WaypointTabView: View {
         @Bindable var navigator = navigator
 
         TabView(selection: $navigator.selectedTab) {
-            // Identity includes position: TabView leaves a moved tab black, so a moved tab is recreated instead.
             ForEach(positionedTabs, id: \.identity) { positioned in
                 let tab = positioned.tab
                 RoutedStackView(router: navigator.router(for: tab.id)) {
                     tab.view
                 }
                 .tag(tab.id)
-                .tabItem { tab.label }
+                .tabItem { tab.label(isSelected: navigator.selectedTab == tab.id) }
             }
         }
         .environment(navigator)

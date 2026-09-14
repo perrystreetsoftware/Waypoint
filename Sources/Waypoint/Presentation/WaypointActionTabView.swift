@@ -25,14 +25,14 @@ public struct WaypointActionTabView: View {
                         tab.view
                     }
                 } label: {
-                    tab.label
+                    tab.label(isSelected: navigator.selectedTab == tab.id)
                 }
             }
 
             Tab(value: actionTab.id, role: .search) {
                 actionTab.view
             } label: {
-                actionTab.label
+                actionTab.label(isSelected: false)
             }
         }
         .environment(navigator)
