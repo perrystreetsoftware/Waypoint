@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "Waypoint",
     platforms: [
-        .iOS("17.0"),
+        .iOS("18.0"),
     ],
     products: [
         .library(
