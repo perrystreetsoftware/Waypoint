@@ -21,22 +21,13 @@ public struct WaypointTabView: View {
                     tab.view
                 }
                 .tag(tab.id)
+                .tabItem { tab.label }
             }
         }
         .environment(navigator)
     }
 
     private var positionedTabs: [PositionedTab] {
-        tabs.enumerated().map { PositionedTab(identity: .init(index: $0.offset, id: $0.element.id), tab: $0.element) }
+        tabs.positioned()
     }
-}
-
-private struct PositionedTab {
-    struct Identity: Hashable {
-        let index: Int
-        let id: NavigatorTab
-    }
-
-    let identity: Identity
-    let tab: RootTab
 }
