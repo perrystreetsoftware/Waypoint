@@ -29,6 +29,19 @@ Waypoint keeps the native primitives underneath and puts one object in front of 
 - **Modal flows that push.** A sheet or full-screen cover gets its own `NavigationStack`, so it can push inside itself and dismiss back to its parent.
 - **Tabs that can change.** Add or remove tabs at runtime. Turn the last tab into an action button that runs code instead of selecting.
 - **App-agnostic.** No domain types, no dependency injection, no configuration. SwiftUI is the only dependency.
+- **Testable.** Navigation is a method call on an object, not view state. It can live in a view model and be asserted in a unit test. See [Testing](#testing).
+
+### Waypoint vs. `NavigationStack` alone
+
+| | `NavigationStack` alone | Waypoint |
+|---|---|---|
+| Where navigation state lives | In every view: a path, a flag per modal | One tree, owned by the navigator |
+| Who can navigate | Only the view that owns the binding | Any view, view model or coordinator |
+| Push, sheet, full-screen cover | Three mechanisms, wired per screen | One method, one `mode` parameter |
+| Modal that pushes inside itself | Build a second `NavigationStack` yourself | Every modal flow gets its own stack |
+| Switching tabs and resetting stacks | Yours to coordinate | `switchTab(to:)` |
+| Forgetting a `NavigationStack` | Push silently does nothing | The stack is always there; the framework owns it |
+| Unit-testing a navigation decision | Not possible without rendering the view | Inject the navigator into the view model and assert the call |
 
 ## Requirements
 
@@ -257,6 +270,70 @@ Outside the view tree, for example in a coordinator or a UIKit bridge, use the s
 ```swift
 WaypointNavigator.shared.navigate(to: DetailView(), mode: .push)
 ```
+
+## Testing
+
+With `NavigationStack` alone, navigation can only happen where the path binding lives: inside the view. That makes a decision like "open the paywall when a free user taps a locked item" untestable without rendering UI.
+
+With Waypoint, navigation is a method call, so the decision can move into the view model. Put the navigator behind a small protocol your app owns, inject it, and assert the call in a test.
+
+```swift
+// App code
+protocol Navigating {
+    func navigate(to destination: some View, mode: NavigationMode)
+    func dismiss()
+}
+
+extension WaypointNavigator: Navigating {}
+
+@Observable
+final class CountryListViewModel {
+    private let navigator: any Navigating
+    private let isPro: Bool
+
+    init(navigator: any Navigating = WaypointNavigator.shared, isPro: Bool) {
+        self.navigator = navigator
+        self.isPro = isPro
+    }
+
+    func select(_ country: Country) {
+        if country.isPremium && !isPro {
+            navigator.navigate(to: PaywallView(), mode: .present(.sheet))
+        } else {
+            navigator.navigate(to: CountryDetailsView(country: country), mode: .push)
+        }
+    }
+}
+```
+
+```swift
+// Test code
+final class NavigatorSpy: Navigating {
+    private(set) var presented: [(type: Any.Type, mode: NavigationMode)] = []
+
+    func navigate(to destination: some View, mode: NavigationMode) {
+        presented.append((type(of: destination), mode))
+    }
+
+    func dismiss() {}
+}
+
+func testLockedCountryOpensPaywallAsSheet() {
+    let spy = NavigatorSpy()
+    let viewModel = CountryListViewModel(navigator: spy, isPro: false)
+
+    viewModel.select(.premiumSample)
+
+    XCTAssertTrue(spy.presented.first?.type == PaywallView.self)
+    guard case .present(.sheet)? = spy.presented.first?.mode else {
+        return XCTFail("Expected the paywall to be presented as a sheet")
+    }
+}
+```
+
+The view becomes a thin layer that forwards taps to the view model. It holds no navigation state and does not need to know how it was reached.
+
+If your app navigates by destination (an enum such as `.profile(id)` instead of a concrete view), put that enum in the protocol and let the production implementation map each case to a view before calling Waypoint. Tests then assert on the destination value rather than on a view type.
 
 ## Design rules
 
